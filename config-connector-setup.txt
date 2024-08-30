@@ -1,0 +1,68 @@
+1. Create the Cluster with Workload Identity enabled and Config Connector option in GKE Console
+2. Create Service Account in GCP and give it required permissions.
+3. Create a IAM policy binding b/w K8s Service Account and GCP Service Account with below Commmand
+
+gcloud iam service-accounts add-iam-policy-binding \
+SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com \
+    --member="serviceAccount:PROJECT_ID.svc.id.goog[cnrm-system/cnrm-controller-manager]" \
+    --role="roles/iam.workloadIdentityUser"
+
+Replace Service Account name, Project Id above
+
+4. Configure the Config Connector in Cluster Mode
+
+Copy the following YAML file into a file named configconnector.yaml:
+
+# configconnector.yaml
+apiVersion: core.cnrm.cloud.google.com/v1beta1
+kind: ConfigConnector
+metadata:
+  # the name is restricted to ensure that there is only one
+  # ConfigConnector resource installed in your cluster
+  name: configconnector.core.cnrm.cloud.google.com
+spec:
+ mode: cluster
+ googleServiceAccount: "SERVICE_ACCOUNT_NAME@cPROJECT_ID.iam.gserviceaccount.com"
+
+Replace Service Account name, Project Id above
+
+5. Apply Config connector YAML
+  kubectl apply -f configconnector.yaml
+
+6. Create a Name Space where you want to Create the Resoucres. ( Namespace here means Project, folder, organization)
+
+kubectl create namespace NAMESPACE
+
+Replace NAMESPACE with your namespace name. For example config-connector.
+
+7. Annonate the Namespace, so that config connector create resources in the corresponding project, folder or organization.
+
+    kubectl annotate namespace \
+    NAMESPACE cnrm.cloud.google.com/project-id=PROJECT_ID
+
+Replace the following:
+NAMESPACE with your namespace name.
+PROJECT_ID with your Google Cloud project ID.
+
+8. Verify the installation.
+
+Config Connector runs all of its components in a namespace named cnrm-system. You can verify the Pods are ready by running the following command:
+
+kubectl wait -n cnrm-system \
+      --for=condition=Ready pod --all
+
+If Config Connector is installed correctly, the output is similar to the following:
+
+pod/cnrm-controller-manager-0 condition met
+
+
+
+
+
+
+
+
+
+
+
+
